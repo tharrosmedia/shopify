@@ -1,0 +1,28 @@
+#shopify-section-header {
+  position: fixed;
+  z-index:1000;
+  left:0;
+  right:0;
+  -webkit-box-shadow:0px 2px 4px 0px rgba(0,0,0,.1);
+  -moz-box-shadow:0px 2px 4px 0px rgba(0,0,0,.1);
+  -ms-box-shadow:0px 2px 4px 0px rgba(0,0,0,.1);
+  -o-box-shadow:0px 2px 4px 0px rgba(0,0,0,.1);
+  box-shadow:0px 2px 4px 0px rgba(0,0,0,.1);
+  background-color: {{ settings.color_body_bg }};
+}
+
+#PageContainer {
+  padding-top: 50px;
+}
+
+@media screen and (max-width: 1200px) {
+#PageContainer {
+  padding-top: 50px;
+}
+}
+
+@media screen and (max-width: 760px) {
+#PageContainer {
+  padding-top: 75px;
+}
+}

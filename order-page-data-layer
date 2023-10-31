@@ -1,46 +1,68 @@
-<script>    
-	window.dataLayer = window.dataLayer || [];                                            
-	var shipping_price = '{{shipping_price | money_without_currency }}';
-	shipping_price  = shipping_price.replace(",", ".");
-	var total_price = '{{total_price | money_without_currency }}';
-	total_price  = total_price.replace(",", ".");
-	var tax_price = '{{tax_price | money_without_currency }}';
-	tax_price  = tax_price.replace(",", ".");
-	  var orderItemsName = []            
-		var orderItemsPrice = []
-		var orderItemsQuantity = []
-  	var orderItemsId = []
-	  var totalQuantity = 0;
+<script>
+    window.dataLayer = window.dataLayer || [];
 
-  {% for line_item in line_items %}
-      orderItemsName.push( '{{ line_item.product.title | remove: "'" | remove: '"'}}')
-      orderItemsPrice.push('{{ line_item.price | times: 0.01 }}');
-      orderItemsQuantity.push('{{ line_item.quantity }}');
-      orderItemsId.push('{{ line_item.product_id }}');
-     totalQuantity +=  {{ line_item.quantity }};
-  {% endfor %}
+    function safeFormat(value, isMoney = false) {
+        if (value === null || value === undefined) return '';
+        value = value.trim();
+        
+        if (isMoney) {
+            value = value.replace(",", ".");
+            return formatMoney(value);
+        }
+        return value;
+    }
 
-  window.dataLayer.push({
-	  'page_type': 'purchase',
-		'event': 'purchase_complete',
-		'currency': "{{ shop.currency }}",
-		'totalValue': total_price,
-		'shipping': shipping_price,
-		'tax': tax_price,
-		'payment_type': '{{order.transactions[0].gateway}}',
-		'transaction_id': "{{order.name}}",
-		'productName': "{{ line_items.title }}",
-		'productPrice': "{{ line_items.price }}",
-		'productQuantity': "{{ line_items.quantity }}",
-		'productId': "{{ line_items.product_id }}",
-		'FirstName' : "{{ customer.first_name }}",
-		'LastName' : "{{ customer.last_name }}",
-		'email' : "{{ customer.email }}",
-		'phone' : "{{ shipping_address.phone }}",
-		'StreetAddress' : "{{ shipping_address.address1 }}",
-		'city' : "{{ shipping_address.city }}",
-		'AddressCountry' : "{{ shipping_address.country }}",
-		'AddressProvince' : "{{ shipping_address.province }}",
-		'AddressZip' : "{{ shipping_address.zip}}",
-  });
+    function formatMoney(value) {
+        return isNaN(parseFloat(value)) ? '0.00' : `${parseFloat(value).toFixed(2)}`;
+    }
+
+    function createProductObject(name, price, quantity, productId) {
+        if (isNaN(price) || isNaN(quantity)) {
+            console.error('Invalid price or quantity:', {name, price, quantity, productId});
+            return null;
+        }
+
+        return {
+            'name': name,
+            'price': price,
+            'quantity': quantity,
+            'id': productId
+        };
+    }
+
+    let products = [];
+    {% for line_item in line_items %}
+        {% if line_item.product.title and line_item.product_id %}
+            let productName = '{{ line_item.product.title | remove: "'" | remove: '"' }}';
+            let productPrice = '{{ line_item.price | times: 0.01 }}';
+            let productQuantity = '{{ line_item.quantity }}';
+            let productId = '{{ line_item.product_id }}';
+            let product = createProductObject(productName, productPrice, productQuantity, productId);
+            if (product) products.push(product);
+        {% endif %}
+    {% endfor %}
+
+    window.dataLayer.push({
+        'event': 'purchase_complete',
+        'currency': safeFormat("{{ shop.currency }}"),
+        'totalValue': safeFormat('{{ total_price | money_without_currency }}', true),
+        'shipping': safeFormat('{{ shipping_price | money_without_currency }}', true),
+        'tax': safeFormat('{{ tax_price | money_without_currency }}', true),
+        'payment_type': safeFormat('{{ order.gateway }}'),
+        'transaction_id': safeFormat("{{ order.name }}"),
+        'products': products,
+        'customer': {
+            'firstName': safeFormat("{{ customer.first_name }}"),
+            'lastName': safeFormat("{{ customer.last_name }}"),
+            'email': safeFormat("{{ customer.email }}")
+        },
+        'shipping_address': {
+            'phone': safeFormat("{{ shipping_address.phone }}"),
+            'streetAddress': safeFormat("{{ shipping_address.address1 }}"),
+            'city': safeFormat("{{ shipping_address.city }}"),
+            'country': safeFormat("{{ shipping_address.country }}"),
+            'province': safeFormat("{{ shipping_address.province }}"),
+            'zip': safeFormat("{{ shipping_address.zip }}")
+        }
+    });
 </script>
